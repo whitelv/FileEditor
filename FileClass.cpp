@@ -10,7 +10,7 @@
 #include <cstring>
 #include <errno.h>
 
-const int BUFFER_SIZE = 100;
+const int BUFFER_SIZE = 1;
 
 bool File::isOpen(){
     if (fileDescriptor == -1) {
@@ -39,7 +39,7 @@ File::File(const char * filename, Mode mode) : readPos(0), writePos(0){
     
     int flags = convertMode(mode, 0);
     
-    fileDescriptor = open(filename, flags);
+    fileDescriptor = open(filename, flags, S_IRWXU);
     
     if (!isOpen()) {
         std::cerr << "Error: Problem with opening file\n";
@@ -62,26 +62,51 @@ void File::clear(){
 }
 
 bool File::operator>>(char * buffer){
+    if (buffer == nullptr) {
+        std::cerr << "Error: Buffer cannot be nullptr\n";
+        throw std::invalid_argument("Error: Buffer cannot be nullptr\n");
+    }
     seek(readPos);
     
-    char ch;
-    int i = 0;
-    int bytesRead = 0;
+    char BUFFER[BUFFER_SIZE];
+    std::memset(BUFFER, 0, BUFFER_SIZE);
+    std::strcpy(buffer, "");
     
-    bytesRead = (int) read(fileDescriptor, &ch, 1);
+    long bytesRead{};
+    int i = 0;
+    char ch;
+    
+    while (true) {
+        bytesRead = read(fileDescriptor, &ch, 1);
+        
+        if (bytesRead == -1){
+            std::cerr << "Error: Problem with reading file\n";
+            throw std::invalid_argument("Error: Problem with reading file.\n");
+            return 0;
+        }
+        
+        if (ch == ' ' || ch == '\n' || bytesRead == 0) {
+            break;
+        }
+        
+        BUFFER[i++] = ch;
+    
+        if (i >= BUFFER_SIZE - 1) {
+            std::strcat(buffer, BUFFER);
+            std::memset(BUFFER, 0, BUFFER_SIZE);
+            i = 0;
+        }
+    }
+    
+    
+    
+    readPos = tell();
+    std::cout << readPos << std::endl;
+    std::strcat(buffer, BUFFER);
     
     if (bytesRead == 0) {
-        readPos = 0;
         return 0;
     }
-    
-    while (bytesRead != 0 && ch != ' ' && ch != '\n' && i < BUFFER_SIZE - 1) {
-        buffer[i++] = ch;
-        bytesRead = (int) read(fileDescriptor, &ch, 1);
-    }
-    buffer[i] = '\0';
-    readPos = tell();
-    
     return 1;
 }
 
@@ -121,28 +146,37 @@ bool File::readline(char * buffer){
 
 
 int main(){
-    File f = File("/Users/lubomirvitvickij/Desktop/Learning Winter 2025/Learning Winter 2025/fileEditor/file.txt", Mode::REWR | Mode::TRUNC);
+    File f = File("/Users/lubomirvitvickij/Desktop/Learning Winter 2025/Learning Winter 2025/FiliEditor1/file.txt", Mode::REWR);
     
     
     
+    f << "ab\ncd";
     
-    f << "a" << " b" << " hello\n" << "yohan";
+    char buffer[100];
     
-    char buffer[BUFFER_SIZE];
-//    
+    f >> buffer;
+    std::cout << buffer << std::endl;
+
+    f >> buffer;
+
+    std::cout << buffer << std::endl;
+
+
+
+    
+
 //    while (f >> buffer) {
-//        std::cout << buffer << " ";
 //    }
     
-    f.readline(buffer);
-    std::cout << buffer << std::endl;
-
-    f.readline(buffer);
-    std::cout << buffer << std::endl;
-
-    f.readline(buffer);
-
-    std::cout << buffer << std::endl;
+//    f.readline(buffer);
+//    std::cout << buffer << std::endl;
+//
+//    f.readline(buffer);
+//    std::cout << buffer << std::endl;
+//
+//    f.readline(buffer);
+//
+//    std::cout << buffer << std::endl;
 
     
     
