@@ -100,7 +100,7 @@ public:
     int fileDescriptor;
     size_t writePos;
     size_t readPos;
- 
+    bool eof;
     
 private:
     File & operator=(File & f);
@@ -117,9 +117,13 @@ public:
     void clear();
     
     bool operator>>(char * buffer);
-    File &  operator<<(char * str);
+    bool operator>>(std::string & str);
     
-    bool readline(char * buffer);
+    
+    File &  operator<<(const char * str);
+    
+    bool readline(char * buffer, size_t size);
+    void writeline(const char * buffer);
 };
 
 
