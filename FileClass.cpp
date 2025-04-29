@@ -37,7 +37,7 @@ File::File(const char * filename, Mode mode) : readPos(0), writePos(0), eof(0){
     }
     
     
-    int flags = convertMode(mode, 0);
+    int flags = convertMode(mode);
     
     fileDescriptor = open(filename, flags, S_IRWXU);
     
@@ -48,8 +48,19 @@ File::File(const char * filename, Mode mode) : readPos(0), writePos(0), eof(0){
     
 }
 
-size_t File::seek(size_t pos){
-    return lseek(fileDescriptor, pos, SEEK_SET);
+void File::seek(size_t pos){
+    seekRead(pos);
+    seekWrite(pos);
+}
+
+size_t File::seekRead(size_t pos){
+    readPos = pos;
+    return lseek(fileDescriptor, readPos, SEEK_SET);
+}
+
+size_t File::seekWrite(size_t pos){
+    writePos = pos;
+    return lseek(fileDescriptor, writePos, SEEK_SET);
 }
 
 size_t File::tell(){
@@ -66,7 +77,7 @@ bool File::operator>>(char * buffer){
         std::cerr << "Error: Buffer cannot be nullptr\n";
         throw std::invalid_argument("Error: Buffer cannot be nullptr\n");
     }
-    seek(readPos);
+    seekRead(readPos);
     
     char BUFFER[BUFFER_SIZE];
     std::memset(BUFFER, 0, BUFFER_SIZE);
@@ -123,7 +134,7 @@ bool File::operator>>(char * buffer){
 
 bool File::operator>>(std::string & str){
    
-    seek(readPos);
+    seekRead(readPos);
     
     char BUFFER[BUFFER_SIZE];
     std::memset(BUFFER, 0, BUFFER_SIZE);
@@ -178,12 +189,13 @@ bool File::operator>>(std::string & str){
 
 
 
+
 File & File::operator<<(const char * str){
     if (str == nullptr) {
         std::cerr << "Error: Error: Buffer cannot be nullptr\n";
         throw std::invalid_argument("Error: Error: Buffer cannot be nullptr\n");
     }
-    seek(writePos);
+    seekWrite(writePos);
     long bytesWrite = write(fileDescriptor, str, std::strlen(str));
     if (bytesWrite == -1) {
         std::cerr << "Error: Problem with writing to file\n";
@@ -198,12 +210,12 @@ bool File::readline(char * buffer, size_t size){
         std::cerr << "Error: Buffer cannot be nullptr\n";
         throw std::invalid_argument("Error: Buffer cannot be nullptr\n");
     }
-    seek(readPos);
+    seekRead(readPos);
     
     char BUFFER[BUFFER_SIZE];
     std::memset(BUFFER, 0, BUFFER_SIZE);
-    std::strcpy(buffer, "");
-    
+    std::memset(buffer, 0, size);
+
     long bytesRead{};
     int i = 0;
     char ch;
@@ -261,18 +273,84 @@ void File::writeline(const char * buffer){
 }
 
 
+size_t File::readBytes(char *buffer, size_t size){
+    seekRead(readPos);
+
+    if (buffer == nullptr) {
+        std::cerr << "Error: Buffer cannot be nullptr\n";
+        throw std::invalid_argument("Error: Buffer cannot be nullptr\n");
+    }
+    
+    std::memset(buffer, 0, size);
+
+    
+    if (eof) {
+        return 0;
+    }
+    
+    
+    long long bytesRead = read(fileDescriptor, buffer, size);
+    if (bytesRead == -1) {
+        std::cerr << "Error: Problem with reading file\n";
+        throw std::invalid_argument("Error: Problem with reading file.\n");
+    }
+    if (bytesRead == 0) {
+        eof = 1;
+    }
+    
+    
+    readPos = tell();
+    return bytesRead;
+}
+
+void File::writeBytes(char *buffer,size_t size){
+    seekWrite(writePos);
+
+    if (buffer == nullptr) {
+        std::cerr << "Error: Buffer cannot be nullptr\n";
+        throw std::invalid_argument("Error: Buffer cannot be nullptr\n");
+    }
+    
+    if (size > std::strlen(buffer)) {
+        std::cerr << "Error: Buffer cannot be smaller than size\n";
+        throw std::invalid_argument("Error: Buffer cannot be smaller than size\n");
+    }
+    
+    long long bytesWrite = write(fileDescriptor, buffer, size);
+    
+    if (bytesWrite == -1) {
+        std::cerr << "Error: Problem with writing to file\n";
+        throw std::invalid_argument("Error: Problem with writing to file.\n");
+    }
+    writePos = tell();
+}
+
+
+
+void File::resetEOF(){
+    eof = 0;
+    seekRead(0);
+}
+
+
+
 
 int main(){
     File f = File("/Users/lubomirvitvickij/Desktop/Learning Winter 2025/Learning Winter 2025/FiliEditor1/file.txt", Mode::REWR | Mode::TRUNC);
     
     
     
-    f << "Lorem\n ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque a eleifend quam.\n Fusce dictum nisi sit amet odio egestas dignissim.\nAenean dignissim id diam sed sagittis. Integer eu hendrerit urna, et rhoncus ligula. Fusce venenatis ligula mi, quis fermentum risus consequat at.\n Donec pretium orci urna, at fringilla lacus rutrum vitae. Proin quis leo mi. Etiam id faucibus metus, nec luctus massa. Etiam ornare magna nunc, nec porta ligula porttitor a. Suspendisse potenti.\n";
+    f << "Lorem\n ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque a eleifend quam.\n Fusce dictum nisi sit amet odio egestas dignissim.\nAenean dignissim id diam sed sagittis. Integer eu hendrerit urna, et rhoncus ligula. Fusce venenatis ligula mi, quis fermentum risus consequat at.\n Donec pretium orci urna, at fringilla lacus rutrum vitae. Proin quis leo mi. Etiam id faucibus metus, nec luctus massa. Etiam ornare magna nunc, nec porta ligula porttitor a. Suspendisse potenti.\n" << "here\n";
+    
+    f.seek(30);
     
     f.writeline("HELLO");
     f.writeline("HELLO");
+    
+    f.writeBytes("HELOOO", 6);
     
     char buffer[100];
+
     
     std::string str;
     
@@ -281,22 +359,37 @@ int main(){
 //    while (f >> str) {
 //        std::cout << str << " ";
 //    }
-
+    
+    
     while (f.readline(buffer, 100)) {
         std::cout << buffer << std::endl;
     }
 
+    f.resetEOF();
     
-//
-//    f.readline(buffer);
-//    std::cout << buffer << std::endl;
-//
-//    f.readline(buffer);
-//
-//    std::cout << buffer << std::endl;
+    f.readBytes(buffer, 1);
+    std::cout << buffer << std::endl;
+    
+    f.readBytes(buffer, 1);
+    std::cout << buffer << std::endl;
+    
+    f.readBytes(buffer, 1);
+    std::cout << buffer << std::endl;
 
+
+
+    f.readline(buffer, 20);
+    std::cout << buffer << std::endl;
+
+    f.readline(buffer, 20);
+
+    std::cout << buffer << std::endl;
+
+    f.readline(buffer, 20);
+
+    std::cout << buffer << std::endl;
     
-    std::cout << std::strlen("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque a eleifend quam. Fusce dictum nisi sit amet odio egestas dignissim.") << std::endl;
+    std::cout << std::strlen("") << std::endl;
    
 
     
