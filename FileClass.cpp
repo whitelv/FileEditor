@@ -8,7 +8,7 @@
 #include "FileClass.h"
 #include <iostream>
 #include <cstring>
-#include <errno.h>
+
 
 const int BUFFER_SIZE = 2;
 
@@ -332,7 +332,9 @@ void File::resetEOF(){
     seekRead(0);
 }
 
-
+bool File::closeFile(){
+    return !close(fileDescriptor);
+}
 
 
 int main(){
@@ -350,7 +352,7 @@ int main(){
     f.writeBytes("HELOOO", 6);
     
     char buffer[100];
-
+    
     
     std::string str;
     
@@ -390,7 +392,8 @@ int main(){
     std::cout << buffer << std::endl;
     
     std::cout << std::strlen("") << std::endl;
-   
+    std::cout << f.closeFile() << std::endl;
+
 
     
 //

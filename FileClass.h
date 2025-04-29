@@ -39,6 +39,8 @@ public:
     size_t readBytes(char *buffer,size_t size);
     void writeBytes(char *buffer,size_t size);
     
+    bool closeFile();
+    
     
 public:
     File(const char * filename, Mode flags = Mode::READ);
