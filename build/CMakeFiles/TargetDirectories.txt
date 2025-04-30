@@ -1,0 +1,3 @@
+/Users/lubomirvitvickij/Desktop/Learning Winter 2025/Learning Winter 2025/FiliEditor1/build/CMakeFiles/MyProject.dir
+/Users/lubomirvitvickij/Desktop/Learning Winter 2025/Learning Winter 2025/FiliEditor1/build/CMakeFiles/edit_cache.dir
+/Users/lubomirvitvickij/Desktop/Learning Winter 2025/Learning Winter 2025/FiliEditor1/build/CMakeFiles/rebuild_cache.dir

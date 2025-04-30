@@ -46,7 +46,7 @@ constexpr Mode validMode[] = {
 
 };
 
-bool isValidMode(Mode value){
+inline bool isValidMode(Mode value){
     for (Mode mode : validMode) {
         if(value == mode)
             return true;
@@ -54,7 +54,7 @@ bool isValidMode(Mode value){
     return false;
 }
 
-int convertMode(Mode m){
+inline int convertMode(Mode m){
     int flags = 0;
     
     struct ModeFlag {
