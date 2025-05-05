@@ -5,50 +5,31 @@
 
 
 int main(){
-    // File f = File("/Users/lubomirvitvickij/Desktop/Learning Winter 2025/Learning Winter 2025/FiliEditor1/file.txt", Mode::REWR | Mode::TRUNC);
-    // std::cout << "Project works" << std::endl;
+    File f = File("/Users/lubomirvitvickij/Desktop/Learning Winter 2025/Learning Winter 2025/FiliEditor1/file1.txt", Mode::CREATE | Mode::REWR);
+    std::cout << "Project works" << std::endl;
     
-    // HANDLE f = CreateFileA("C:\\liubomyr\\FileEditor\\file.txt", convertAccess(Mode::READ), 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    // if (f == INVALID_HANDLE_VALUE)
-    // {
-    //     std::cout << "error" << std::endl;
-
-    //     return 1;
-    // }
-
-    // DWORD bytesWritten = 0;
-    // WriteFile(f,"NEW INPUT\0", 9, &bytesWritten, NULL);
     
-    // char buffer[60];
-    // DWORD bytesRead = 0;
-    // ReadFile(f, buffer, 59, &bytesRead, NULL);
 
-    // std::cout << buffer << std::endl;
-    
-    File f = File("C:\\liubomyr\\FileEditor\\file3.txt", Mode::REWR | Mode::TRUNC);
+     const char * str = "LOREM ipsum i go to school every morning";
+      f.writeBytes(str, 10);
 
-    DWORD bytesWritten = 0;
-    const char * str = "LOREM ipsum i go to school every morning";
-    f.writeBytes(str, 10);
+     f << str << "\nhere" << "\ntoto";
 
-    f << str << "\nhere" << "\ntoto";
+     f.seek(30);
 
-    f.seek(30);
+     f << "\nhere" << "\ntoto";
 
-    f << "\nhere" << "\ntoto";
+     f.writeline("here we are");
+     f << "today";
 
-    f.writeline("here we are");
-    f << "today";
-
-    std::cout << f.tell() << std::endl;
+     std::cout << f.tell() << std::endl;
 
 
     char buffer[100];
     std::memset(buffer, 0, 100);
 
-    DWORD bytesRead = 0;
     
-    f.seek(0);
+     f.seek(0);
 
     f.readBytes(buffer, 17);
     std::cout << buffer << std::endl;

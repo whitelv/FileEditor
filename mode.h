@@ -41,6 +41,8 @@ constexpr Mode operator&(Mode m1, Mode m2){
     return static_cast<Mode>(int(m1) & int(m2));
 }
 
+
+
 constexpr Mode validMode[] = {
     Mode::READ,
     Mode::WRITE,

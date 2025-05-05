@@ -55,7 +55,7 @@ File::File(const char * filename, Mode mode) : readPos(0), writePos(0), eof(0){
     
     unsigned long flags = convertMode(mode);
     
-    #ifdef __APPLE
+    #ifdef __APPLE__
         fileDescriptor = open(filename, flags, S_IRWXU);
     #elif _WIN32
         unsigned long dispos = convertCreationDisposition(mode);
@@ -460,7 +460,7 @@ size_t File::readBytes(char *buffer, size_t size){
 
 
 
-void File::writeBytes(const char *buffer,size_t size){
+void File::writeBytes(const char *buffer ,size_t size){
     seekWrite(writePos);
     bytesType bytesWrite{};
     
