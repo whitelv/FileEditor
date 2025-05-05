@@ -7,8 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Додаємо виконуваний файл з усіх cpp-файлів
 add_executable(MyProject
-    main.cpp
-    FileClass.cpp
+    main.cpp mode.h FileClass.cpp FileClass.h mode.cpp
 )
 
 # Вказуємо заголовочні файли (не обов'язково, але для IDE корисно)

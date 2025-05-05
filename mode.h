@@ -5,9 +5,22 @@
 //  Created by Любомир Витвицький on 29.04.2025.
 //
 
-#include <fcntl.h>
-#include <unistd.h>
+#ifndef mode_h
+#define mode_h
+
+#ifdef __APPLE__
+    #include <fcntl.h>
+    #include <unistd.h>
+#endif
+
+#ifdef _WIN32
+    #include <fileapi.h>
+    #include <windows.h>
+#endif
+
 #include <iostream>
+
+
 
 
 enum class Mode{
@@ -38,8 +51,7 @@ constexpr Mode validMode[] = {
     Mode::CREATE | Mode::READ,
     Mode::CREATE | Mode::WRITE,
     Mode::CREATE | Mode::REWR,
-    Mode::APPEND | Mode::WRITE,
-    Mode::APPEND | Mode::REWR,
+    Mode::APPEND | Mode::READ,
     Mode::TRUNC | Mode::WRITE,
     Mode::TRUNC | Mode::READ,
     Mode::TRUNC | Mode::REWR,
@@ -54,30 +66,16 @@ inline bool isValidMode(Mode value){
     return false;
 }
 
-inline int convertMode(Mode m){
-    int flags = 0;
-    
-    struct ModeFlag {
-        Mode mode;
-        int flag;
-    };
-    
-    ModeFlag unixModes[] = {
-        {Mode::READ, O_RDONLY},
-        {Mode::WRITE, O_WRONLY},
-        {Mode::APPEND, O_APPEND},
-        {Mode::REWR, O_RDWR},
-        {Mode::CREATE, O_CREAT},
-        {Mode::TRUNC, O_TRUNC},
-    };
-    
-    
-    for (auto mode : unixModes) {
-        if (int(mode.mode & m) != 0) {
-            flags |= mode.flag;
-        }
-    }
-    
-    
-    return flags;
-}
+struct ModeFlag {
+    Mode mode;
+    unsigned long flag;
+};
+
+
+
+extern ModeFlag Modes[];
+unsigned long convertMode(Mode m);
+unsigned long convertCreationDisposition(Mode m);
+
+
+#endif

@@ -10,13 +10,11 @@
 
 #include "mode.h"
 
-
-
-
-
-
-
-
+#ifdef __APPLE__
+    typedef int Filetype;
+#elif _WIN32
+    typedef HANDLE Filetype;
+#endif
 
 
 class File{
@@ -37,7 +35,7 @@ public:
     void writeline(const char * buffer);
     
     size_t readBytes(char *buffer,size_t size);
-    void writeBytes(char *buffer,size_t size);
+    void writeBytes(const char *buffer,size_t size);
     
     bool closeFile();
     
@@ -52,21 +50,16 @@ public:
 private:
     File & operator=(File & f);
     File(File & f);
-    size_t seekRead(size_t pos);
-    size_t seekWrite(size_t pos);
+    void seekRead(size_t pos);
+    void seekWrite(size_t pos);
 
     
-private:
-    int fileDescriptor;
+public:
+    Filetype fileDescriptor;
     size_t writePos;
     size_t readPos;
     bool eof;
     
-
-
-    
-    
-  
 };
 
 
