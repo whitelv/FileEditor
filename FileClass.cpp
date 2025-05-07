@@ -12,35 +12,11 @@
 
 const int BUFFER_SIZE = 2;
 
-#ifdef __APPLE__
-typedef long long bytesType;
-#elif _WIN32
-typedef unsigned long bytesType;
-#endif
-
-#ifdef __APPLE__
-bool File::isOpen(){
-    if (fileDescriptor == -1) {
-        return 0;
-    }
-    return 1;
-}
-#elif _WIN32
-bool File::isOpen(){
-    if (fileDescriptor == INVALID_HANDLE_VALUE) {
-        return 0;
-    }
-    return 1;
-}
-
-#endif
 
 
 
 File::File(const char * filename, Mode mode) : readPos(0), writePos(0), eof(0){
-    
-// SEPARATE FUNCTION VALIDATION?
-    
+        
     if (filename == nullptr) {
         std::cerr << "Error: You must enter a filename.\n";
         throw std::invalid_argument("Error: You must enter a filename.\n");
@@ -52,16 +28,8 @@ File::File(const char * filename, Mode mode) : readPos(0), writePos(0), eof(0){
         throw std::invalid_argument("Error: You must enter a valid mode.\n");
     }
     
-    
-    unsigned long flags = convertMode(mode);
-    
-    #ifdef __APPLE__
-        fileDescriptor = open(filename, flags, S_IRWXU);
-    #elif _WIN32
-        unsigned long dispos = convertCreationDisposition(mode);
-        fileDescriptor = CreateFileA(filename, flags, 0, NULL, dispos, FILE_ATTRIBUTE_NORMAL, NULL);
-    #endif
-    
+    fileDescriptor = createFileDescriptor(filename, mode);
+
     if (!isOpen()) {
         std::cerr << "Error: Problem with opening file\n";
         throw std::invalid_argument("Error: Problem with opening file.\n");
@@ -73,89 +41,6 @@ void File::seek(size_t pos){
     seekWrite(pos);
 }
 
-#ifdef __APPLE__
-void File::seekRead(size_t pos){
-    readPos = pos;
-    if(lseek(fileDescriptor, readPos, SEEK_SET) == -1){
-        std::cerr << "Error: Problem with reading file\n";
-        throw std::invalid_argument("Error: Problem with reading file\n");
-    }
-}
-
-
-void File::seekWrite(size_t pos){
-    writePos = pos;
-    if(lseek(fileDescriptor, writePos, SEEK_SET) == -1){
-        std::cerr << "Error: Problem with writing to file\n";
-        throw std::invalid_argument("Error: Problem with writing to file\n");
-    }
-}
-
-size_t File::tell(){
-    size_t current_pos = lseek(fileDescriptor, 0, SEEK_CUR);
-
-    if(current_pos == -1){
-        std::cerr << "Error: Problem with cursor position\n";
-        throw std::invalid_argument("Error: Problem with cursor postion\n");
-    }
-
-    return current_pos;
-
-}
-void File::clear(){
-    if (ftruncate(fileDescriptor, 0) == -1){
-        std::cerr << "Error: Problem with clearing file\n";
-        throw std::invalid_argument("Error: Problem with clearing file\n");
-    }
-    seek(0);
-}
-
-
-#elif _WIN32
-void File::seekRead(size_t pos){
-    readPos = pos;
-    LARGE_INTEGER li;
-    li.QuadPart = readPos;
-    if(!SetFilePointerEx(fileDescriptor, li, NULL, FILE_BEGIN)){
-        std::cerr << "Error: Problem with reading file\n";
-        throw std::invalid_argument("Error: Problem with reading file\n");
-    }
-}
-
-
-void File::seekWrite(size_t pos){
-    writePos = pos;
-    LARGE_INTEGER li;
-    li.QuadPart = writePos;
-    if(!SetFilePointerEx(fileDescriptor, li, NULL, FILE_BEGIN)){
-        std::cerr << "Error: Problem with reading file\n";
-        throw std::invalid_argument("Error: Problem with reading file\n");
-    }
-}
-
-size_t File::tell(){
-    LARGE_INTEGER li;
-    li.QuadPart = 0;
-    LARGE_INTEGER current_pos;
-    if(!SetFilePointerEx(fileDescriptor, li, &current_pos, FILE_CURRENT)){
-        std::cerr << "Error: Problem with cursor position\n";
-        throw std::invalid_argument("Error: Problem with cursor postion\n");
-    }
-    return size_t (current_pos.QuadPart);
-    
-}
-
-void File::clear(){
-    seek(0);
-    if(!SetEndOfFile(fileDescriptor)){
-        std::cerr << "Error: Problem with clearing file\n";
-        throw std::invalid_argument("Error: Problem with clearing file\n");
-    }
-}
-
-
-
-#endif
 
 
 
@@ -177,28 +62,13 @@ bool File::operator>>(char * buffer){
     char ch;
     
     if (eof) {
-        return 0;
+        return false;
     }
     
     while (true) {
 
-        #ifdef __APPLE__
-        bytesRead = read(fileDescriptor, &ch, 1);
-        
-        if (bytesRead == -1){
-            std::cerr << "Error: Problem with reading file\n";
-            throw std::invalid_argument("Error: Problem with reading file.\n");
-            return 0;
-        }
-        #elif _WIN32
+        bytesRead = readF(1, &ch);
 
-        if(!ReadFile(fileDescriptor, &ch, 1, &bytesRead, NULL)){
-            std::cerr << "Error: Problem with reading file\n";
-            throw std::invalid_argument("Error: Problem with reading file.\n");
-            return 0;
-        }
-
-        #endif
         
         if (bytesRead == 0) {
             eof = 1;
@@ -227,7 +97,7 @@ bool File::operator>>(char * buffer){
     readPos = tell();
     
    
-    return 1;
+    return true;
 }
 
 
@@ -246,27 +116,13 @@ bool File::operator>>(std::string & str){
     char ch;
     
     if (eof) {
-        return 0;
+        return false;
     }
     
     while (true) {
-        #ifdef __APPLE__
-        bytesRead = read(fileDescriptor, &ch, 1);
-        
-        if (bytesRead == -1){
-            std::cerr << "Error: Problem with reading file\n";
-            throw std::invalid_argument("Error: Problem with reading file.\n");
-            return 0;
-        }
-        #elif _WIN32
 
-        if(!ReadFile(fileDescriptor, &ch, 1, &bytesRead, NULL)){
-            std::cerr << "Error: Problem with reading file\n";
-            throw std::invalid_argument("Error: Problem with reading file.\n");
-            return 0;
-        }
+        bytesRead = readF(1, &ch);
 
-        #endif
         
         if (bytesRead == 0) {
             eof = 1;
@@ -294,7 +150,7 @@ bool File::operator>>(std::string & str){
     
     readPos = tell();
     
-    return 1;
+    return true;
 }
 
 
@@ -304,24 +160,12 @@ File & File::operator<<(const char * str){
         throw std::invalid_argument("Error: Error: Buffer cannot be nullptr\n");
     }
     seekWrite(writePos);
+
+
     bytesType bytesWrite{};
 
 
-    #ifdef __APPLE__
-
-    bytesWrite = write(fileDescriptor, str, std::strlen(str));
-    if (bytesWrite == -1) {
-        std::cerr << "Error: Problem with writing to file\n";
-        throw std::invalid_argument("Error: Problem with writing to file.\n");
-    }
-
-    #elif _WIN32
-    if (!WriteFile(fileDescriptor, str, std::strlen(str), &bytesWrite, NULL)){
-        std::cerr << "Error: Problem with writing to file\n";
-        throw std::invalid_argument("Error: Problem with writing to file.\n");
-    }
-
-    #endif
+    bytesWrite = writeF(std::strlen(str), str);
 
 
     writePos = tell();
@@ -346,30 +190,12 @@ bool File::readline(char * buffer, size_t size){
     char ch;
     
     if (eof) {
-        return 0;
+        return false;
     }
     
     while (true) {
 
-
-        #ifdef __APPLE__
-        bytesRead = read(fileDescriptor, &ch, 1);
-        
-        if (bytesRead == -1){
-            std::cerr << "Error: Problem with reading file\n";
-            throw std::invalid_argument("Error: Problem with reading file.\n");
-            return 0;
-        }
-        #elif _WIN32
-
-        if(!ReadFile(fileDescriptor, &ch, 1, &bytesRead, NULL)){
-            std::cerr << "Error: Problem with reading file\n";
-            throw std::invalid_argument("Error: Problem with reading file.\n");
-            return 0;
-        }
-
-        #endif
-
+        bytesRead = readF(1, &ch);
 
         if (bytesRead == 0) {
             eof = 1;
@@ -402,7 +228,7 @@ bool File::readline(char * buffer, size_t size){
     readPos = tell();
     
    
-    return 1;
+    return true;
 }
 
 
@@ -426,25 +252,11 @@ size_t File::readBytes(char *buffer, size_t size){
     bytesType bytesRead{};
     
     if (eof) {
-        return 0;
-    }
-    
-    #ifdef __APPLE__
-    
-    bytesRead = read(fileDescriptor, buffer, size);
-    if (bytesRead == -1) {
-        std::cerr << "Error: Problem with reading file\n";
-        throw std::invalid_argument("Error: Problem with reading file.\n");
+        return false;
     }
 
-    #elif _WIN32
-    if(!ReadFile(fileDescriptor, buffer, size, &bytesRead, NULL)){
-        std::cerr << "Error: Problem with reading file\n";
-        throw std::invalid_argument("Error: Problem with reading file.\n");
-        return 0;
-    }
 
-    #endif
+    bytesRead = readF(size, buffer);
 
 
     if (bytesRead == 0) {
@@ -455,8 +267,6 @@ size_t File::readBytes(char *buffer, size_t size){
     readPos = tell();
     return bytesRead;
 }
-
-
 
 
 
@@ -474,20 +284,8 @@ void File::writeBytes(const char *buffer ,size_t size){
         std::cerr << "Error: Buffer cannot be smaller than size\n";
         throw std::invalid_argument("Error: Buffer cannot be smaller than size\n");
     }
-    #ifdef __APPLE__
-    bytesWrite = write(fileDescriptor, buffer, size);
-    
-    if (bytesWrite == -1) {
-        std::cerr << "Error: Problem with writing to file\n";
-        throw std::invalid_argument("Error: Problem with writing to file.\n");
-    }
-    #elif _WIN32
-    if (!WriteFile(fileDescriptor, buffer, size, &bytesWrite, NULL)){
-        std::cerr << "Error: Problem with writing to file\n";
-        throw std::invalid_argument("Error: Problem with writing to file.\n");
-    }
 
-    #endif
+    bytesWrite = writeF(size, buffer);
     writePos = tell();
 }
 
@@ -497,19 +295,7 @@ void File::resetEOF(){
     eof = 0;
     seekRead(0);
 }
-#ifdef __APPLE__
 
-
-bool File::closeFile(){
-    return !close(fileDescriptor);
-}
-
-#elif _WIN32
-bool File::closeFile(){
-    return CloseHandle(fileDescriptor);
-}
-
-#endif
 
 
 

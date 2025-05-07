@@ -1,7 +1,7 @@
 #include "mode.h"
 
 
-#ifdef __APPLE__
+#ifdef OS_UNIX
 ModeFlag Modes[] = {
     {Mode::READ, O_RDONLY},
     {Mode::WRITE, O_WRONLY},
@@ -10,7 +10,7 @@ ModeFlag Modes[] = {
     {Mode::CREATE, O_CREAT},
     {Mode::TRUNC, O_TRUNC},
 };
-#elif _WIN32
+#elif OS_WINDOWS
 ModeFlag Modes[] = {
     {Mode::READ, GENERIC_READ},
     {Mode::WRITE, GENERIC_WRITE},
@@ -36,7 +36,7 @@ unsigned long convertMode(Mode m){
 
 
 
-#ifdef _WIN32
+#ifdef OS_WINDOWS
 
 unsigned long convertCreationDisposition(Mode m){
     unsigned long dispos = 0;

@@ -5,12 +5,31 @@ project(MyProject LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Додаємо виконуваний файл з усіх cpp-файлів
-add_executable(MyProject
-    main.cpp mode.h FileClass.cpp FileClass.h mode.cpp
+
+
+set(COMMON_SOURCES
+    main.cpp
+    mode.cpp
+    FileClass.cpp
 )
 
-# Вказуємо заголовочні файли (не обов'язково, але для IDE корисно)
-target_include_directories(MyProject PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if (WIN32)
+    set(OS_DEFINE OS_WINDOWS)
+    set(PLATFORM_SOURCE platformWindows.cpp)
+elseif(APPLE OR UNIX)
+    set(OS_DEFINE OS_UNIX)
+    set(PLATFORM_SOURCE platformUnix.cpp)
+endif()
+
+
+# Додаємо виконуваний файл з усіх cpp-файлів
+add_executable(MyProject
+    ${COMMON_SOURCES}
+    ${PLATFORM_SOURCE}
+    
+)
+
+
+target_compile_definitions(MyProject PRIVATE ${OS_DEFINE})
 
 

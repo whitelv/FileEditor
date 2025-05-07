@@ -10,11 +10,16 @@
 
 #include "mode.h"
 
-#ifdef __APPLE__
+#ifdef OS_UNIX
     typedef int Filetype;
-#elif _WIN32
+    typedef long long bytesType;
+
+#elif OS_WINDOWS
     typedef HANDLE Filetype;
+    typedef unsigned long bytesType;
+
 #endif
+
 
 
 class File{
@@ -52,7 +57,9 @@ private:
     File(File & f);
     void seekRead(size_t pos);
     void seekWrite(size_t pos);
-
+    Filetype createFileDescriptor(const char * filename, Mode m);
+    bytesType readF(size_t size, char * buffer);
+    bytesType writeF(size_t size,const char * buffer);
     
 public:
     Filetype fileDescriptor;
